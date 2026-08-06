@@ -1,0 +1,178 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Acessível de CLP - Controle de Tanque</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <a href="#main-content" class="skip-link">Pular para o conteúdo principal</a>
+
+    <header role="banner">
+        <div class="header-content">
+            <div>
+                <h1>⚡ Simulador de CLP - Controle de Nível de Tanque</h1>
+                <p>Ciclo de Varredura (Scan Rate: 20Hz / 50ms) | Padrão IEC 61131-3</p>
+            </div>
+            <button type="button" class="btn btn-manual" id="btn-open-manual" aria-haspopup="dialog" aria-controls="manual-dialog">
+                📖 Manual de Funcionamento
+            </button>
+        </div>
+    </header>
+
+    <main id="main-content" class="dashboard" role="main">
+        
+        <!-- COLUNA 1: PAINEL DE COMANDO -->
+        <section class="card panel-controls" aria-labelledby="title-controls">
+            <h2 id="title-controls">🎛️ Mesa de Comando</h2>
+            
+            <div class="control-group" role="group" aria-labelledby="group-inputs">
+                <h3 id="group-inputs">Entradas Digitais (Inputs)</h3>
+                <button type="button" class="btn btn-start" id="btn-start" aria-describedby="desc-start">
+                    <span class="btn-text">I0.0 - Ligar (NA)</span>
+                </button>
+                <span id="desc-start" class="sr-only">Mantenha pressionado ou toque para acionar a entrada de ligar</span>
+
+                <button type="button" class="btn btn-stop" id="btn-stop" aria-describedby="desc-stop">
+                    <span class="btn-text">I0.1 - Desligar (NF)</span>
+                </button>
+                <span id="desc-stop" class="sr-only">Mantenha pressionado para interromper o circuito</span>
+
+                <button type="button" class="btn btn-drain" id="btn-drain" aria-describedby="desc-drain">
+                    <span class="btn-text">Manual - Dreno</span>
+                </button>
+                <span id="desc-drain" class="sr-only">Mantenha pressionado para esvaziar o tanque manualmente</span>
+            </div>
+
+            <div class="control-group" role="group" aria-labelledby="group-outputs">
+                <h3 id="group-outputs">Saídas Digitais (Outputs)</h3>
+                <div class="status-row">
+                    <div class="led" id="led-q00" role="status" aria-label="Saída Q0.0 Válvula de Entrada Desligada"></div>
+                    <span>Q0.0 - Válvula de Entrada (Y1)</span>
+                </div>
+                <div class="status-row">
+                    <div class="led" id="led-q01" role="status" aria-label="Saída Q0.1 Alarme de Nível Alto Desligado"></div>
+                    <span>Q0.1 - Alarme Tanque Cheio</span>
+                </div>
+            </div>
+
+            <div class="control-group" role="group" aria-labelledby="group-sensors">
+                <h3 id="group-sensors">Sensores de Campo</h3>
+                <div class="status-row">
+                    <div class="led sensor" id="led-i02" role="status" aria-label="Sensor I0.2 Nível Alto Desativado"></div>
+                    <span>I0.2 - Sensor Nível Alto (S2)</span>
+                </div>
+                <div class="status-row">
+                    <div class="led sensor" id="led-i03" role="status" aria-label="Sensor I0.3 Nível Baixo Desativado"></div>
+                    <span>I0.3 - Sensor Nível Baixo (S1)</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- COLUNA 2: LÓGICA LADDER -->
+        <section class="card panel-ladder" aria-labelledby="title-ladder">
+            <h2 id="title-ladder">🧩 Diagrama Ladder (Tempo Real)</h2>
+            
+            <div class="ladder-container" role="region" aria-label="Esquema Lógico Ladder" tabindex="0">
+                <!-- Degrau 1 -->
+                <div class="rung-title">Degrau 1: Controle da Válvula (Start / Auto-Preenchimento / Selo)</div>
+                <div class="rung" role="img" aria-label="Degrau 1: Contato NF I0.1 em série com paralelo de I0.0, I0.3 e Q0.0, em série com NF I0.2 acionando bobina Q0.0">
+                    <div class="line" aria-hidden="true"></div>
+                    <span class="component" id="ladder-i01" title="Contato NF I0.1">|/| I0.1</span>
+                    <span class="component" id="ladder-i00" title="Contato NA I0.0 (Botão Ligar)">| | I0.0</span>
+                    <span class="component" id="ladder-i03" title="Contato NA I0.3 (Sensor S1)">| | I0.3</span>
+                    <span class="component" id="ladder-i02" title="Contato NF I0.2">|/| I0.2</span>
+                    <span class="component coil" id="ladder-q00" title="Bobina Q0.0">( ) Q0.0</span>
+                </div>
+
+                <!-- Degrau 2 -->
+                <div class="rung-title">Degrau 2: Alarme por Nível Alto (S2)</div>
+                <div class="rung" role="img" aria-label="Degrau 2: Contato NA I0.2 acionando bobina Q0.1">
+                    <div class="line" aria-hidden="true"></div>
+                    <span class="component" id="ladder-i02-alarm" title="Contato NA I0.2">| | I0.2</span>
+                    <span class="component coil" id="ladder-q01" title="Bobina Q0.1">( ) Q0.1</span>
+                </div>
+            </div>
+
+            <div class="diagnostics" aria-live="polite">
+                <h3>📊 Diagnóstico do CLP</h3>
+                <p>Tempo de Scan: <strong id="scan-time">0 ms</strong></p>
+                <p>Estado do Ciclo: <span class="status-online">RUN (Executando)</span></p>
+            </div>
+        </section>
+
+        <!-- COLUNA 3: PLANTA FÍSICA -->
+        <section class="card panel-plant" aria-labelledby="title-plant">
+            <h2 id="title-plant">🏭 Planta Física Simulada</h2>
+            
+            <div class="tank-container" role="img" aria-label="Animação gráfica do tanque de água com canos de entrada e dreno">
+                <div class="pipe pipe-in" aria-hidden="true">
+                    <div class="flow" id="flow-in"></div>
+                </div>
+
+                <div class="tank" id="tank-body">
+                    <div class="water" id="tank-water"></div>
+                    <div class="sensor-mark sensor-high">S2 (90%)</div>
+                    <div class="sensor-mark sensor-low">S1 (20%)</div>
+                </div>
+
+                <div class="pipe pipe-out" aria-hidden="true">
+                    <div class="flow" id="flow-out"></div>
+                </div>
+            </div>
+
+            <div class="tank-stats" aria-live="polite" aria-atomic="true">
+                <span>Nível Atual: <strong id="water-level-text">0.0%</strong></span>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL DO MANUAL DE FUNCIONAMENTO -->
+    <dialog id="manual-dialog" class="modal-dialog" aria-labelledby="manual-title">
+        <div class="modal-header">
+            <h2 id="manual-title">📘 Manual de Funcionamento do Simulador</h2>
+            <button type="button" class="btn-close-modal" id="btn-close-manual" aria-label="Fechar manual">✕</button>
+        </div>
+        <div class="modal-body">
+            <section class="manual-section">
+                <h3>1. Sobre o Simulador</h3>
+                <p>Este aplicativo simula o controle automatizado de nível de um tanque industrial através de um <strong>Controlador Lógico Programável (CLP)</strong>, executando o Ciclo de Varredura (Scan) contínuo a cada 50 milissegundos.</p>
+            </section>
+
+            <section class="manual-section">
+                <h3>2. Instruções de Operação</h3>
+                <ul>
+                    <li><strong>I0.0 - Botoeira Ligar (Verde):</strong> Pulso para abrir manualmente a válvula de entrada.</li>
+                    <li><strong>I0.1 - Botoeira Desligar (Vermelho):</strong> Contato NF. Interrompe a corrente lógica e fecha a válvula imediatamente.</li>
+                    <li><strong>Manual - Dreno (Azul):</strong> Pressione para abrir o dreno e esvaziar o tanque.</li>
+                </ul>
+            </section>
+
+            <section class="manual-section">
+                <h3>3. Proteção e Sensores</h3>
+                <ul>
+                    <li><strong>Sensor Nível Baixo I0.3 (S1 - 20%):</strong> Quando o nível do tanque cai para 20% ou menos, o sensor ativa automaticamente o enchimento via válvula <strong>Q0.0</strong>.</li>
+                    <li><strong>Sensor Nível Alto I0.2 (S2 - 90%):</strong> Quando o nível atinge 90%, desliga a válvula <strong>Q0.0</strong> (evitando transbordamento) e ativa o alarme visual <strong>Q0.1</strong>.</li>
+                </ul>
+            </section>
+
+            <section class="manual-section">
+                <h3>4. Recursos de Acessibilidade</h3>
+                <ul>
+                    <li><strong>Navegação por Teclado:</strong> Use <kbd>Tab</kbd> para navegar e <kbd>Espaço</kbd>/<kbd>Enter</kbd> para acionar botões.</li>
+                    <li><strong>Atalho ESC:</strong> Pressione <kbd>Esc</kbd> para fechar este manual a qualquer momento.</li>
+                </ul>
+            </section>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-start" id="btn-close-manual-footer">Entendi / Voltar ao Simulador</button>
+        </div>
+    </dialog>
+
+    <script src="script.js"></script>
+</body>
+</html>
